@@ -3,6 +3,7 @@
 import json
 import os
 from typing import List, Dict, Optional
+from datetime import datetime
 
 class TaskManager:
     def __init__(self, filepath: str = "tasks.json"):
@@ -35,7 +36,8 @@ class TaskManager:
         task = {
             "id": len(self.tasks) + 1,
             "title": title.strip(),
-            "completed": False
+            "completed": False,
+            "created_at": datetime.now().isoformat()
         }
         self.tasks.append(task)
         self.save_tasks()
@@ -66,6 +68,21 @@ class TaskManager:
             return True
         return False
 
+    def toggle_task(self, index: int) -> bool:
+        """Toggle task completion status and save to file."""
+        if 1 <= index <= len(self.tasks):
+            self.tasks[index - 1]["completed"] = not self.tasks[index - 1]["completed"]
+            self.save_tasks()
+            return True
+        return False
+
+    def get_stats(self) -> Dict[str, int]:
+        """Get task statistics."""
+        total = len(self.tasks)
+        completed = sum(1 for task in self.tasks if task["completed"])
+        pending = total - completed
+        return {"total": total, "completed": completed, "pending": pending}
+
     def search_tasks(self, keyword: str) -> List[Dict]:
         """Search tasks by keyword."""
         keyword = keyword.lower()
@@ -79,9 +96,11 @@ def main():
         print("1. Add Task")
         print("2. List Tasks")
         print("3. Complete Task")
-        print("4. Delete Task")
-        print("5. Search Tasks")
-        print("6. Exit")
+        print("4. Toggle Task Status")
+        print("5. Delete Task")
+        print("6. Search Tasks")
+        print("7. Show Statistics")
+        print("8. Exit")
 
         choice = input("\nSelect option: ").strip()
 
@@ -105,12 +124,21 @@ def main():
             elif choice == "4":
                 manager.list_tasks()
                 if manager.tasks:
+                    idx = int(input("Enter task number to toggle: ").strip())
+                    if manager.toggle_task(idx):
+                        status = "incomplete" if not manager.tasks[idx - 1]["completed"] else "complete"
+                        print(f"✓ Task marked as {status}.")
+                    else:
+                        print("✗ Invalid task number.")
+            elif choice == "5":
+                manager.list_tasks()
+                if manager.tasks:
                     idx = int(input("Enter task number to delete: ").strip())
                     if manager.delete_task(idx):
                         print("✓ Task deleted.")
                     else:
                         print("✗ Invalid task number.")
-            elif choice == "5":
+            elif choice == "6":
                 keyword = input("Enter search keyword: ").strip()
                 results = manager.search_tasks(keyword)
                 if results:
@@ -120,7 +148,13 @@ def main():
                         print(f"{idx}. [{status}] {task['title']}")
                 else:
                     print("No tasks found matching that keyword.")
-            elif choice == "6":
+            elif choice == "7":
+                stats = manager.get_stats()
+                print(f"\n=== Task Statistics ===")
+                print(f"Total Tasks: {stats['total']}")
+                print(f"Completed: {stats['completed']}")
+                print(f"Pending: {stats['pending']}")
+            elif choice == "8":
                 print("Goodbye!")
                 break
             else:
